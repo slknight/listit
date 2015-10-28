@@ -5,9 +5,9 @@
  content="CREATOR: Stacey Knight-Davis">
   <meta name="Publisher"
  content="Booth Library, Eastern Illinois University">
-  <meta name="description" content="DVD List">
-  <meta name="keywords" content="DVD LIst">
-  <meta name="date" content="2015-04-21">
+  <meta name="description" content="List It">
+  <meta name="keywords" content="List It">
+  <meta name="date" content="">
 <!--Date should be in the format YYYY-MM-DD (eg 1997-07-16); this date does NOT change when the page is revised -->
   <title>List it! - EIU - Booth Library</title>
 
@@ -22,7 +22,8 @@
 
 <?php 
 
-/*This mess was written by Stacey Knight-Davis, Eastern Illinois University, slknight@eiu.edu. Code has no warranty and is not professionally written.
+/*This mess was written by Stacey Knight-Davis, Eastern Illinois University, slknight@eiu.edu. 
+Code has no warranty and is not professionally written. 
 
 DEPENDANCIES:
 
@@ -37,7 +38,7 @@ if (!isset($_POST['submitted']))
 //form not submitted, so show the form
 echo"<p>Scan EIU barcodes with a scanner or paste in barcodes one per line</p>
 
-<form method=\"POst\" action=\"". htmlspecialchars($_SERVER["PHP_SELF"]) . "\">
+<form method=\"Post\" action=\"". htmlspecialchars($_SERVER["PHP_SELF"]) . "\">
 <TEXTAREA NAME=list ROWS=30 COLS=20 ></TEXTAREA>
 <input type=\"hidden\" value=\"true\" name=\"submitted\"><br />
 <input type=\"submit\" name=submit value=\"Generate\">";
@@ -50,7 +51,7 @@ if (isset($_POST['list']))
 
   			{$list = ($_POST['list']);
 			
-			/*there should be something here to sanitize inputs, but everythign i tried broke. see note above about no warranties and non-professional code.*/
+			/*there should be something here to sanitize inputs, but everythign I tried broke. see note above about no warranties and non-professional code.*/
 			
 			/*turn barcode list with line breaks into a comma separated string. only tested on windows, sorry if it breaks on linux*/			
 			$barcodestring= preg_replace('#\s+#',',',trim($list));
@@ -183,7 +184,8 @@ if ($nrows > 0) {
 		if ($isbn!=="")
 		{
 			//isbn was not empty, so pull in an image in a floating div using the isbn.
-			$imgurl="http://secure.syndetics.com/index.aspx?type=xw12&isbn=". $isbn . "/SC.GIF&client=easterniu";
+			
+			$imgurl="http://secure.syndetics.com/index.aspx?type=xw12&isbn=". $isbn . "/SC.GIF&client=" .$syndeticsID;
 			//check to make sure syndetics actually has an image for this isbn
 			$url=getimagesize($imgurl);
 	
@@ -193,17 +195,35 @@ if ($nrows > 0) {
 				$size=$url[0];
 				if ($size > 1)
 					{
-					$goodimage="true";
+					$goodimage="true"
+					$divheight="120px"';}
 					
-					//we have an image, so write the div.
-		 			$copyme= $copyme . "<div style=\"float: left;\"><a href=\"http://vufind.carli.illinois.edu/vf-eiu/Record/eiu_";
-		 			$copyme= $copyme . $bibid;
-		 			$copyme= $copyme . "\" target=\"new\"><img src=\"http://secure.syndetics.com/index.aspx?type=xw12&isbn=";
-		 			$copyme=  $copyme . $isbn;
-	 				$copyme = $copyme . "/SC.GIF&client=easterniu\"  style=\"margin-right:10px;\"></a></div>\n";
-	 				}
+				if ($size == 1)
+					{
+					$goodimage="false"
+					$divheight="auto"';}
+					
+				if ($size < 1)
+					{
+					$goodimage="false"
+					$divheight="auto"';}
 				}
 			}
+			
+			//copy out results		
+			//we have an image, so write the div.
+			
+		$copyme= $copyme . "<div style=\"margin-left: 5px; margin-bottom: 20px; Height:" .$divheight . ";\">";
+		
+		if (goodimage=="true:)
+		{$copyme= $copyme . "<div style=\"float: left; height 120px;\"><a href=\"http://vufind.carli.illinois.edu/vf-eiu/Record/eiu_";
+		$copyme= $copyme . $bibid;
+		$copyme= $copyme . "\" target=\"new\"><img src=\"http://secure.syndetics.com/index.aspx?type=xw12&isbn=";
+		$copyme=  $copyme . $isbn;
+	 	$copyme = $copyme . "/SC.GIF&client=";
+	 	$copyme = $copyme . $syndeticsID;
+	 		$copyme = $copyme ."\"  style=\"margin-right:10px;\"></a></div>\n";}
+	 			
 		
 		//run the title through our function above to make it pretty
 		$title=to_title_case($title);
