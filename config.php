@@ -1,5 +1,10 @@
 <?php
 
+//Syndetics Solutions Client ID
+
+$syndeticsID="YOUR ID HERE"
+
+
 /*
 | -------------------------------------------------------------------
 | EXPLANATION OF VARIABLES
