@@ -5,9 +5,9 @@
  content="CREATOR: Stacey Knight-Davis">
   <meta name="Publisher"
  content="Booth Library, Eastern Illinois University">
-  <meta name="description" content="List It">
-  <meta name="keywords" content="List It">
-  <meta name="date" content="">
+  <meta name="description" content="DVD List">
+  <meta name="keywords" content="DVD LIst">
+  <meta name="date" content="2015-04-21">
 <!--Date should be in the format YYYY-MM-DD (eg 1997-07-16); this date does NOT change when the page is revised -->
   <title>List it! - EIU - Booth Library</title>
 
@@ -21,15 +21,17 @@
 
 
 <?php 
+//turn this off for production
+error_reporting(E_ALL);
+ini_set("display_Errors", 1);
 
-/*This mess was written by Stacey Knight-Davis, Eastern Illinois University, slknight@eiu.edu. 
-Code has no warranty and is not professionally written. 
 
-DEPENDANCIES:
+/*This mess was written by Stacey Knight-Davis, Eastern Illinois University, slknight@eiu.edu. Code has no warranty and is not professionally written.*/
 
-PHP with the OCI8 library. 
-
-*/
+$copyme=NULL;
+$divheight=NULL;
+$goodimage=False;
+$barcodestring=NULL;
 
 
 //check to see if form has been submitted
@@ -47,11 +49,18 @@ echo"<p>Scan EIU barcodes with a scanner or paste in barcodes one per line</p>
 
 
 //check to see if form submitted barcodes
+
+echo $barcodestring;
+
+
 if (isset($_POST['list']))
 
   			{$list = ($_POST['list']);
+
+
+//$list = preg_replace('/[^a-zA-Z]+/', '', $list);
 			
-			/*there should be something here to sanitize inputs, but everythign I tried broke. see note above about no warranties and non-professional code.*/
+			/*there should be something here to sanitize inputs, but everythign i tried broke. see note above about no warranties and non-professional code.*/
 			
 			/*turn barcode list with line breaks into a comma separated string. only tested on windows, sorry if it breaks on linux*/			
 			$barcodestring= preg_replace('#\s+#',',',trim($list));
@@ -87,7 +96,7 @@ $rawtitle=str_replace(' : ', ': ', $rawtitle);
 	$rawtitle=str_replace(' / ', '', $rawtitle); 
 	
 	  /* split title string into array of words */
-     $words = explode( ' ', mb_strtolower( $rawtitle ) );
+     $words = explode( ' ', mb_strtolower($rawtitle ));
      /* iterate over words */
      foreach ( $words as $position => $word ) {
          /* re-capitalize acronyms */
@@ -133,32 +142,74 @@ if (!$conn) {
    $m = oci_error();
    echo $m['message'], " It did not connect\n";
    exit;
+
+
 }
 
 
 
 /*nasty sql statement. Change the "order by" clause at the end to modify sort order. edit table names containing "eiu" for your library.*/
 
-$sql = "SELECT item_barcode.ITEM_BARCODE as barcode, bib_text.AUTHOR as author, bib_item.BIB_ID as bibitem, bib_text.TITLE_BRIEF as Title, bib_text.ISBN as isbn, MFHD_MASTER.display_call_no as Call_Num, LOCATION.LOCATION_DISPLAY_NAME as loc FROM  (((eiudb.BIB_TEXT INNER JOIN ((eiudb.ITEM_BARCODE INNER JOIN eiudb.ITEM ON ITEM_BARCODE.ITEM_ID = ITEM.ITEM_ID) INNER JOIN eiudb.BIB_ITEM ON ITEM.ITEM_ID = BIB_ITEM.ITEM_ID) ON eiudb.BIB_TEXT.BIB_ID = BIB_ITEM.BIB_ID) INNER JOIN eiudb.MFHD_ITEM ON (ITEM.ITEM_ID = MFHD_ITEM.ITEM_ID) AND (BIB_ITEM.ITEM_ID = MFHD_ITEM.ITEM_ID)) INNER JOIN eiudb.MFHD_MASTER ON MFHD_ITEM.MFHD_ID = MFHD_MASTER.MFHD_ID) INNER JOIN eiudb.LOCATION ON MFHD_MASTER.LOCATION_ID = LOCATION.LOCATION_ID WHERE item_barcode.ITEM_BARCODE IN ($barcodestring) order by Title";
+
+
+$sql = "SELECT item_barcode.ITEM_BARCODE as barcode, bib_text.AUTHOR as author, bib_item.BIB_ID as bibitem, bib_text.TITLE_BRIEF as Title, bib_text.ISBN as isbn, MFHD_MASTER.display_call_no as Call_Num, LOCATION.LOCATION_DISPLAY_NAME as loc FROM  (((eiudb.BIB_TEXT INNER JOIN ((eiudb.ITEM_BARCODE INNER JOIN eiudb.ITEM ON ITEM_BARCODE.ITEM_ID = ITEM.ITEM_ID) INNER JOIN eiudb.BIB_ITEM ON ITEM.ITEM_ID = BIB_ITEM.ITEM_ID) ON eiudb.BIB_TEXT.BIB_ID = BIB_ITEM.BIB_ID) INNER JOIN eiudb.MFHD_ITEM ON (ITEM.ITEM_ID = MFHD_ITEM.ITEM_ID) AND (BIB_ITEM.ITEM_ID = MFHD_ITEM.ITEM_ID)) INNER JOIN eiudb.MFHD_MASTER ON MFHD_ITEM.MFHD_ID = MFHD_MASTER.MFHD_ID) INNER JOIN eiudb.LOCATION ON MFHD_MASTER.LOCATION_ID = LOCATION.LOCATION_ID WHERE INSTR(','||'$barcodestring'||',', ','||item_barcode.ITEM_BARCODE||',') <> 0 order by Title";
+
+
+/*
+After an oci8 update in 2017, the data type for the item_barcode seemed to change. If the sql above does not work, try the original below
+
+$sql = "SELECT item_barcode.ITEM_BARCODE as barcode, bib_text.AUTHOR as author, bib_item.BIB_ID as bibitem, bib_text.TITLE_BRIEF as Title, bib_text.ISBN as isbn, MFHD_MASTER.display_call_no as Call_Num, LOCATION.LOCATION_DISPLAY_NAME as loc FROM  eiudb.BIB_TEXT INNER JOIN eiudb.ITEM_BARCODE INNER JOIN eiudb.ITEM ON item_barcode.ITEM_ID = ITEM.ITEM_ID  INNER JOIN eiudb.BIB_ITEM ON ITEM.ITEM_ID = BIB_ITEM.ITEM_ID ON eiudb.BIB_TEXT.BIB_ID = BIB_ITEM.BIB_ID INNER JOIN eiudb.MFHD_ITEM ON ITEM.ITEM_ID = MFHD_ITEM.ITEM_ID AND BIB_ITEM.ITEM_ID = MFHD_ITEM.ITEM_ID INNER JOIN eiudb.MFHD_MASTER ON MFHD_ITEM.MFHD_ID = MFHD_MASTER.MFHD_ID INNER JOIN eiudb.LOCATION ON MFHD_MASTER.LOCATION_ID = LOCATION.LOCATION_ID WHERE item_barcode.ITEM_BARCODE IN ($barcodestring) ORDER BY Title";*/
 
 
 
-$stid = oci_parse($conn, $sql);
 
-oci_execute($stid);
+
+
+$stid=oci_parse($conn, $sql);
+
+
+
 
 //error message if fails
 if (!$stid) {
-   $e = oci_error($conn);  // For oci_parse errors pass the connection handle
-    trigger_error(htmlentities($e['message']), E_USER_ERROR);
+  $e = oci_error($stid);  // For oci_parse errors pass the connection handle
+    //trigger_error(htmlentities($e['message']), E_USER_ERROR);
+echo "Fetch Code 1:" . $e["message"]; 
+
 }
+
+//ociexecute($stid, OCI_DEFAULT);
+
+//oci_execute($stid);
+
+
+$r = oci_execute($stid);
+if (!$r) {
+    $e = oci_error($stid);  // For oci_execute errors pass the statement handle
+    print htmlentities($e['message']);
+    print "\n<pre>\n";
+    print htmlentities($e['sqltext']);
+    printf("\n%".($e['offset']+1)."s", "^");
+    print  "\n</pre>\n";
+}
+
+
+
 
 //get the number of rows
 $nrows = oci_fetch_all($stid, $results);
 
+//echo $barcodestring;
+
+//echo $nrows;
+
+//echo $results['TITLE'][1];
+
+
+
 //if more than one row
+
 if ($nrows > 0) {
-   
 	
 	//iterate through this blasted two dimensional array that oracle spat out
 	  for ($i = 0; $i < $nrows; $i++) {
@@ -173,19 +224,17 @@ if ($nrows > 0) {
 		  $isbn=$results['ISBN'][$i];
 		  $isbnpieces = explode( ' ', ( $isbn ) );
 		  $author=$results['AUTHOR'][$i];
-		  
-		  
-		  //copying out formatted results to the variable copyme. lots of stuff will get concatonated on to this.
-   $copyme= $copyme . "<div style=\"margin-left: 5px; height: 120px;\">";
+		  		  
+
 
     	
 		//isbn could be empty. checking for that.
 		$isbn=$isbnpieces[0];
-		if ($isbn!=="")
+
+if (!empty($isbn))
 		{
 			//isbn was not empty, so pull in an image in a floating div using the isbn.
-			
-			$imgurl="http://secure.syndetics.com/index.aspx?type=xw12&isbn=". $isbn . "/SC.GIF&client=" .$syndeticsID;
+			$imgurl="http://secure.syndetics.com/index.aspx?type=xw12&isbn=". $isbn . "/SC.GIF&client=easterniu";
 			//check to make sure syndetics actually has an image for this isbn
 			$url=getimagesize($imgurl);
 	
@@ -195,54 +244,71 @@ if ($nrows > 0) {
 				$size=$url[0];
 				if ($size > 1)
 					{
-					$goodimage="true"
-					$divheight="120px"';}
+					$goodimage="true";
+					$divheight="120px";
 					
+					
+	 				}
 				if ($size == 1)
-					{
-					$goodimage="false"
-					$divheight="auto"';}
-					
-				if ($size < 1)
-					{
-					$goodimage="false"
-					$divheight="auto"';}
+				{$divheight="auto";
+				$goodimage="false";}
+
+                                if ($size < 1)
+				{$divheight="auto";
+				$goodimage="false";}
+
 				}
-			}
-			
-			//copy out results		
-			//we have an image, so write the div.
-			
-		$copyme= $copyme . "<div style=\"margin-left: 5px; margin-bottom: 20px; Height:" .$divheight . ";\">";
+
+else                                         {$divheight="auto";
+                                        $goodimage="false";}
+
+				
+
+}
+else                                         {$divheight="auto";
+                                        $goodimage="false";}
+
+
 		
-		if (goodimage=="true:)
-		{$copyme= $copyme . "<div style=\"float: left; height 120px;\"><a href=\"http://vufind.carli.illinois.edu/vf-eiu/Record/eiu_";
-		$copyme= $copyme . $bibid;
-		$copyme= $copyme . "\" target=\"new\"><img src=\"http://secure.syndetics.com/index.aspx?type=xw12&isbn=";
-		$copyme=  $copyme . $isbn;
-	 	$copyme = $copyme . "/SC.GIF&client=";
-	 	$copyme = $copyme . $syndeticsID;
-	 		$copyme = $copyme ."\"  style=\"margin-right:10px;\"></a></div>\n";}
-	 			
+
+
+			
+				  //copying out formatted results to the variable copyme. lots of stuff will get concatonated on to this.
+ 
+
+
+   $copyme= $copyme . "<div style=\"margin-left: 5px; margin-bottom: 20px; height:" . $divheight . ";\">";	
+			
+	
+
+
+	if ($goodimage=="true" and !is_null($goodimage))
+	{
+		 			$copyme= $copyme . "<div style=\"float: left; height: 120px;\"><a href=\"http://vufind.carli.illinois.edu/vf-eiu/Record/eiu_";
+		 			$copyme= $copyme . $bibid;
+		 			$copyme= $copyme . "\" target=\"new\"><img src=\"http://secure.syndetics.com/index.aspx?type=xw12&isbn=";
+		 			$copyme=  $copyme . $isbn;
+	 				$copyme = $copyme . "/SC.GIF&client=easterniu\"  style=\"margin-right:10px;\"></a></div>\n";}
 		
 		//run the title through our function above to make it pretty
 		$title=to_title_case($title);
-		$copyme=  $copyme . "<strong>" . $title . "</strong>\n";
-		$copyme=  $copyme . "<br />\n";
+		$copyme=  $copyme . "<ul style=\"list-style-type:none; margin-left: 0px; padding-left:0px;\">\n<li style=\"margin-left: 0px; padding-left:0px;\" ><strong>" . $title . "</strong></li>\n";
+	
 		
 		//check for an author and write it in
 		 if (isset($author))
 		{
+			$copyme=  $copyme . "<li style=\"margin-left: 0px; padding-left:0px;\">";
 		  $copyme=  $copyme . $author;
-		  $copyme=  $copyme . "<br />\n";
+		  $copyme=  $copyme . "</li>\n";
 		  }
 		  
-		  
+		  $copyme=  $copyme . "<li style=\"margin-left: 0px; padding-left:0px;\">";
 		  $copyme=  $copyme . $results['CALL_NUM'][$i];
-		  $copyme=  $copyme . "<br />\n";
+		  $copyme=  $copyme . "</li>\n";
 	  	
 		 //write in links to vufind
-		 
+		   $copyme=  $copyme . "<li style=\"margin-left: 0px; padding-left:0px;\">";
 		 $copyme=  $copyme . "<a href=\"http://vufind.carli.illinois.edu/vf-eiu/Record/eiu_";
 		 $copyme=  $copyme . $bibid;
 		 $copyme=  $copyme . "/Description\" target=\"new\">summary</a> | ";		
@@ -250,7 +316,7 @@ if ($nrows > 0) {
 		 $copyme=  $copyme . "<a href=\"http://vufind.carli.illinois.edu/vf-eiu/Record/eiu_";
 		 $copyme=  $copyme . $bibid;
 		 $copyme=  $copyme . "\" target=\"new\">details</a>";
-		 $copyme=  $copyme . "</p>\n"; 
+		 $copyme=  $copyme . "</li></ul>\n"; 
 
 		//end the div
 		   $copyme=  $copyme . "</div>\n\n";
@@ -271,12 +337,21 @@ if ($nrows > 0) {
 if (isset($_POST['submitted']))
 {
 echo "<h2>Preview</h2>";
+
+//var_dump($results);
+
 echo $copyme;
+
+
 
 //because clicking view source is hard
 echo "<br /><h2>Source</h2>";
 echo "<textarea rows=\"50\" cols=\"50\">";
-echo  $copyme;
+
+
+echo  $copyme; 
+
+
 echo   "</textarea>";
 }
 
